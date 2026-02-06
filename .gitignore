@@ -1,0 +1,20 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Build outputs
+bin/
+obj/
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.log
+*.cache
