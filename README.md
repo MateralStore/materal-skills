@@ -1,36 +1,36 @@
-# Materal MMB Skills
+# Materal MMB 技能集
 
 ![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-blue?style=flat-square)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)
 
-A collection of Claude Code skills for the [Materal.MergeBlock (MMB)](https://github.com/MateralStore) framework - a multi-module .NET backend framework.
+这是一套为 [Materal.MergeBlock (MMB)](https://github.com/MateralStore) 框架开发的 Claude Code 技能集 - 一个多模块 .NET 后端框架。
 
-## Overview
+## 概述
 
-Materal.MergeBlock (MMB) is a modular framework for building .NET backend applications. This skill collection provides specialized tools to streamline the development workflow, from requirements analysis to implementation and testing.
+Materal.MergeBlock (MMB) 是一个用于构建 .NET 后端应用程序的模块化框架。该技能集提供了专门的工具来简化开发工作流程，从需求分析到实现和测试。
 
-## Features
+## 特性
 
-- **Full Development Lifecycle Support** - From requirements analysis to implementation
-- **Multi-Module Architecture** - Designed for MMB's modular project structure
-- **Interactive Workflow** - Step-by-step guidance with user confirmation at each stage
-- **Code Generation** - Automated code generation for entities, services, and controllers
-- **Chinese Language Support** - Primary language is Chinese for better local developer experience
+- **全开发生命周期支持** - 从需求分析到实现
+- **多模块架构** - 专为 MMB 的模块化项目结构设计
+- **交互式工作流** - 在每个阶段提供逐步指导并需要用户确认
+- **代码生成** - 自动生成实体、服务和控制器代码
+- **中文语言支持** - 主要使用中文以提供更好的本地开发者体验
 
-## Available Skills
+## 可用技能
 
-### Requirements & Design
+### 需求与设计
 
-| Skill | Description |
+| 技能 | 描述 |
 |-------|-------------|
 | `mmb-requirements-analysis` | 需求分析 - 逐个提问式交互收集完整需求信息 |
 | `mmb-feature-design` | 功能设计 - 将需求拆分为多个功能模块 |
 | `mmb-entity-design` | 实体设计 - 设计业务实体和属性 |
 | `mmb-task-breakdown` | 任务拆解 - 将功能拆分为具体实现任务 |
 
-### Implementation
+### 实现
 
-| Skill | Description |
+| 技能 | 描述 |
 |-------|-------------|
 | `mmb-generator` | 代码生成 - 基于设计生成实体、服务、控制器代码 |
 | `mmb-impl` | 业务实现 - 实现具体业务逻辑 |
@@ -40,9 +40,9 @@ Materal.MergeBlock (MMB) is a modular framework for building .NET backend applic
 | `mmb-controller-impl` | 控制器实现 - 实现API控制器 |
 | `mmb-jwt-auth` | JWT认证 - 添加JWT授权支持 |
 
-### Utilities
+### 工具
 
-| Skill | Description |
+| 技能 | 描述 |
 |-------|-------------|
 | `mmb-build` | 构建验证 - 验证项目构建是否成功 |
 | `mmb-fix` | 错误修复 - 自动修复构建错误 |
@@ -50,21 +50,21 @@ Materal.MergeBlock (MMB) is a modular framework for building .NET backend applic
 | `mmb-exception-handling` | 异常处理 - 统一异常处理 |
 | `mmb-controller-return` | 控制器返回 - 统一返回格式 |
 
-## Installation
+## 安装
 
 ```bash
-# Add this repository as a marketplace
+# 将此仓库添加为市场
 /plugin marketplace add https://github.com/MateralStore/materal-skills
 
-# Install the plugin
+# 安装插件
 /plugin install materal-skills@materal-skills
 ```
 
-## Usage
+## 使用方法
 
-### Basic Workflow
+### 基本工作流
 
-The MMB development process follows these steps:
+MMB 开发流程遵循以下步骤：
 
 ```
 用户提出需求
@@ -86,15 +86,15 @@ The MMB development process follows these steps:
 完成
 ```
 
-### Example
+### 示例
 
 ```
 我需要开发一个用户管理功能
 ```
 
-Claude Code will automatically invoke the appropriate skills and guide you through the development process.
+Claude Code 将自动调用适当的技能并指导您完成开发过程。
 
-## Project Structure
+## 项目结构
 
 ```
 skills/
@@ -109,41 +109,41 @@ skills/
 └── ...
 ```
 
-## Development
+## 开发
 
 ```bash
-# Clone repository
+# 克隆仓库
 git clone https://github.com/MateralStore/materal-skills.git
 cd materal-skills
 
-# Test a skill locally (copy to Claude skills directory)
+# 本地测试技能（复制到 Claude 技能目录）
 cp -r skills/mmb-* ~/.claude/skills/
 ```
 
-## Contributing
+## 贡献
 
-We welcome contributions! To add a new skill:
+我们欢迎贡献！要添加新技能：
 
-1. Read the [AGENTS.md](AGENTS.md) documentation for structure guidelines
-2. Create a new skill directory in `skills/`
-3. Add a `SKILL.md` file with proper frontmatter
-4. Add reference documentation in `references/` if needed
-5. Test thoroughly with MMB projects
-6. Submit a pull request
+1. 阅读 [AGENTS.md](AGENTS.md) 文档了解结构指南
+2. 在 `skills/` 中创建新的技能目录
+3. 添加带有适当前置数据的 `SKILL.md` 文件
+4. 如有需要在 `references/` 中添加参考文档
+5. 使用 MMB 项目进行彻底测试
+6. 提交 pull request
 
-## License
+## 许可证
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+本项目在 MIT 许可证下授权 - 详情请参阅 [LICENSE](LICENSE) 文件。
 
-## Support
+## 支持
 
-- [Documentation](https://github.com/MateralStore/materal-skills)
-- [Issue Tracker](https://github.com/MateralStore/materal-skills/issues)
+- [文档](https://github.com/MateralStore/materal-skills)
+- [问题跟踪](https://github.com/MateralStore/materal-skills/issues)
 
-## Related Projects
+## 相关项目
 
-- [Materal.MergeBlock Framework](https://github.com/MateralStore)
+- [Materal.MergeBlock 框架](https://github.com/MateralStore)
 
-## Acknowledgments
+## 致谢
 
-Built for the Claude Code ecosystem to accelerate MMB framework development.
+为 Claude Code 生态系统构建，以加速 MMB 框架开发。
