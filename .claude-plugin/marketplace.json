@@ -1,0 +1,115 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "materal-skills",
+  "version": "1.0.0",
+  "description": "MMB (Materal.MergeBlock) 框架专业开发技能集 - 一套用于 .NET 多模块后端框架的 Claude Code 技能，涵盖从需求分析到代码生成的完整开发生命周期",
+  "owner": {
+    "name": "Materal",
+    "email": "support@materal.com"
+  },
+  "homepage": "https://github.com/MateralStore/materal-skills",
+  "plugins": [
+    {
+      "name": "mmb-requirements-analysis",
+      "description": "需求分析 - 逐个提问式交互收集完整需求信息",
+      "source": "./skills/mmb-requirements-analysis",
+      "category": "development"
+    },
+    {
+      "name": "mmb-feature-design",
+      "description": "功能设计 - 将需求拆分为多个功能模块",
+      "source": "./skills/mmb-feature-design",
+      "category": "development"
+    },
+    {
+      "name": "mmb-entity-design",
+      "description": "实体设计 - 设计业务实体和属性",
+      "source": "./skills/mmb-entity-design",
+      "category": "development"
+    },
+    {
+      "name": "mmb-task-breakdown",
+      "description": "任务拆解 - 将功能拆分为具体实现任务",
+      "source": "./skills/mmb-task-breakdown",
+      "category": "development"
+    },
+    {
+      "name": "mmb-generator",
+      "description": "代码生成 - 基于设计生成实体、服务、控制器代码",
+      "source": "./skills/mmb-generator",
+      "category": "development"
+    },
+    {
+      "name": "mmb-impl",
+      "description": "业务实现 - 实现具体业务逻辑",
+      "source": "./skills/mmb-impl",
+      "category": "development"
+    },
+    {
+      "name": "mmb-repository-impl",
+      "description": "仓储实现 - 实现数据访问层",
+      "source": "./skills/mmb-repository-impl",
+      "category": "development"
+    },
+    {
+      "name": "mmb-service-impl",
+      "description": "服务实现 - 实现业务服务层",
+      "source": "./skills/mmb-service-impl",
+      "category": "development"
+    },
+    {
+      "name": "mmb-controller-design",
+      "description": "控制器设计 - 设计API控制器结构",
+      "source": "./skills/mmb-controller-design",
+      "category": "development"
+    },
+    {
+      "name": "mmb-controller-impl",
+      "description": "控制器实现 - 实现API控制器",
+      "source": "./skills/mmb-controller-impl",
+      "category": "development"
+    },
+    {
+      "name": "mmb-jwt-auth",
+      "description": "JWT认证 - 添加JWT授权支持",
+      "source": "./skills/mmb-jwt-auth",
+      "category": "security"
+    },
+    {
+      "name": "mmb-build",
+      "description": "构建验证 - 验证项目构建是否成功",
+      "source": "./skills/mmb-build",
+      "category": "productivity"
+    },
+    {
+      "name": "mmb-fix",
+      "description": "错误修复 - 自动修复构建错误",
+      "source": "./skills/mmb-fix",
+      "category": "productivity"
+    },
+    {
+      "name": "mmb-file-split",
+      "description": "文件拆分 - 拆分大型文件",
+      "source": "./skills/mmb-file-split",
+      "category": "productivity"
+    },
+    {
+      "name": "mmb-exception-handling",
+      "description": "异常处理 - 统一异常处理",
+      "source": "./skills/mmb-exception-handling",
+      "category": "development"
+    },
+    {
+      "name": "mmb-controller-return",
+      "description": "控制器返回 - 统一返回格式",
+      "source": "./skills/mmb-controller-return",
+      "category": "development"
+    },
+    {
+      "name": "mmb-service-design",
+      "description": "服务设计 - 设计业务服务接口",
+      "source": "./skills/mmb-service-design",
+      "category": "development"
+    }
+  ]
+}
