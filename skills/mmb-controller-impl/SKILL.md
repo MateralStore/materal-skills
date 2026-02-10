@@ -1,302 +1,147 @@
 ---
 name: mmb-controller-impl
-description: MMB 框架控制器实现技能。指导 LLM 根据控制器接口实现控制器逻辑。使用场景：(1) 控制器接口设计完成后需要实现控制器时；(2) 需要手动实现无法通过 MapperController 自动生成的控制器方法时；(3) MMB 项目开发流程中控制器设计完成后。输入控制器接口定义，输出控制器实现代码。适用于所有使用 Materal.MergeBlock 框架的项目。
+description: MMB (Materal.MergeBlock) 框架非标准 CRUD 控制器实现技能。用于在标准 CRUD 之外实现控制器层能力，并在两种路径间做决策：(1) 无需控制器特殊处理时，在服务接口方法上添加 [MapperController(MapperType.Xxx)] 并通过代码生成得到控制器；(2) 需要数据加工、聚合编排、文件流、特殊路由/鉴权等处理时，手写 IController 与 Controller 实现。适用于“新增非标准接口”“扩展现有控制器动作”“判断是否可走映射控制器生成”的场景。
 ---
 
-# MMB 控制器实现技能
+# MMB 非标准 CRUD 控制器实现技能
 
-## 概述
+按以下固定流程实现，优先基于仓库检索结果决策，不依赖猜测。
 
-本技能用于根据控制器接口实现符合 MMB 框架规范的控制器类。
+> **重要说明**：本技能仅处理**非标准 CRUD 控制器能力**，不处理标准 CRUD。
 
-## 工作流程
+## 强制约束
+
+1. 仅实现非标准 CRUD 控制器功能；标准 CRUD 控制器介入使用 `mmb-controller-crud-impl`（服务层标准 CRUD 使用 `mmb-service-crud-impl`）。
+2. 禁止修改任何 `MGC` 目录下文件。
+3. 修改前先检索项目内现有命名、路由、返回模型风格，保持一致。
+4. 涉及异常处理时遵循 `mmb-exception-handling`。
+5. `MapperControllerAttribute` 仅允许标记在服务接口方法上（`AttributeTargets.Method`），且必须传入 `MapperType`。
+6. 若项目已启用全局默认鉴权，默认不要添加裸 `[Authorize]`；仅在“公开”或“策略升级”场景显式加特性。
+7. Tree/Index 接口需要统一策略且生成代码不满足时，优先在实体上标记 `NotTreeController` / `NotIndexController` 后手写控制器，不用后置 Filter 打补丁。
+
+## 使用边界
+
+### 本技能处理
+
+1. 标准 CRUD 之外的控制器动作新增或扩展（如重置密码、状态切换、个人中心、统计、文件流）。
+2. 非标准接口的 `MapperController` 生成路径或手写控制器路径决策。
+3. 非标准接口的控制器层特殊处理（聚合编排、流式响应、复杂参数绑定、特殊路由/鉴权）。
+
+### 本技能不处理
+
+1. 标准 CRUD 五类动作：获取列表、获取详情、添加、修改、删除。
+2. 标准 CRUD 控制器方法重写与介入（转 `mmb-controller-crud-impl`）。
+3. 标准 CRUD 服务实现（转 `mmb-service-crud-impl`）。
+
+判定规则：优先按**操作语义**判断是否为标准 CRUD，任务编号仅作辅助，不作为硬约束。
+
+## 命名约定
+
+1. 使用 `{ProjectName}.{ModuleName}` 作为模块命名空间前缀。
+2. 控制器基类命名使用 `{ModuleName}Controller`，例如模块 `Order` 对应 `OrderController`。
+
+## 流程总览
 
 ```mermaid
 flowchart TD
-    A[输入控制器接口定义] --> B{检查 MGC 文件夹<br/>是否存在部分类?}
-    B -->|不存在| C[创建完整类<br/>继承 {ModuleName}Controller]
-    B -->|存在| D{MGC 中的类<br/>是否继承基类?}
-    D -->|已继承| E[创建同名部分类<br/>不添加基类]
-    D -->|未继承| F[创建同名部分类<br/>继承 {ModuleName}Controller]
-    C --> G[实现接口方法]
-    E --> G
-    F --> G
-    G --> H[调用服务方法]
-    H --> I[输出实现代码]
+    A[读取功能需求] --> B[读取 IService 文件]
+    B --> C{判断功能是否需要控制器层特殊处理\n数据加工/聚合/流式/特殊路由等}
+    C -->|不需要特殊处理| D[在服务接口方法上添加 MapperController(MapperType.Xxx)]
+    D --> M[编写请求模型]
+    M --> F[生成代码]
+    F --> I[结束流程]
+    C -->|需要特殊处理| E[编写 IController 接口定义]
+    E --> J[编写请求模型]
+    J --> K[编写 Controller 实现]
+    K --> I[结束流程]
 ```
 
-## 执行步骤
+## Step A-B：读取需求与服务接口
 
-### 第一步：读取控制器接口定义
+1. 读取功能需求，提取以下信息：
+- 接口语义、输入字段、输出字段
+- HTTP 动词和路由约束
+- 是否存在跨服务编排、文件流、权限上下文依赖
+2. 读取对应服务接口文件（通常在 `*.Abstractions/Services/`），确认目标服务方法是否已存在。
+3. 若服务方法不存在，先配合 `mmb-service-impl` 完成服务接口与服务实现。
 
-**控制器接口来源**：
-```
-{ProjectName}.{ModuleName}.Abstractions/Controllers/I{Entity}Controller.cs
-```
+## Step C：是否需要控制器层特殊处理
+
+满足任一条件，即判定为“需要特殊处理”：
+
+1. 控制器需要做数据加工或聚合编排（不仅是一对一映射）。
+2. 需要处理文件上传下载、流式响应、分块/长连接。
+3. 需要自定义路由模板或复杂参数绑定（生成器默认只生成 `[HttpGet/Post/Put/Delete/Patch]`）。
+4. 需要基于 Header/Cookie/Claim 做额外处理。
+5. 需要返回与默认生成模式不一致的响应结构。
+6. Tree/Index 生成控制器的鉴权粒度不满足需求，且需要统一策略声明。
+
+若仅为“请求模型 -> 服务模型 -> 服务方法 -> 统一结果包装”直通调用，判定为“不需要特殊处理”。
+
+## 分支 1：不需要特殊处理（MapperController 路径）
+
+1. 在服务接口方法上添加 `[MapperController(MapperType.Xxx)]`：
+- `MapperType.Get` -> `[HttpGet]`
+- `MapperType.Post` -> `[HttpPost]`
+- `MapperType.Put` -> `[HttpPut]`
+- `MapperType.Delete` -> `[HttpDelete]`
+- `MapperType.Patch` -> `[HttpPatch]`
+2. 按需配置鉴权参数：
+- 匿名：`[MapperController(MapperType.Get, IsAllowAnonymous = true)]`，生成 `[AllowAnonymous]`
+- 策略：`[MapperController(MapperType.Get, Policy = "AdminOnly")]`，生成 `[Authorize(Policy = "AdminOnly")]`
+- 当 `IsAllowAnonymous = true` 时，`Policy` 不生效
+ - 若仅需默认登录态且项目已全局默认鉴权：不配置 `Policy`，也不在手写控制器里补裸 `[Authorize]`
+3. 在 `*.Abstractions/RequestModel/{Entity}/` 编写请求模型。
+4. 确保请求模型与服务方法入参映射可成立：
+- 需要映射参数（`RequestName != Name`）会生成 `Mapper.Map`
+- 其余参数按原类型直接透传
+5. 明确返回包装规则（由生成器自动处理）：
+- 服务方法 `Task` 或 `void` -> 控制器返回 `ResultModel`
+- 服务方法 `Task<T>` 或 `T` -> 控制器返回 `ResultModel<T>`
+- 服务方法返回分页元组 `(List<T> result, RangeModel rangeInfo)`（同步/异步）-> 控制器返回 `CollectionResultModel<T>`
+6. 运行代码生成：
 
 ```bash
-Read {ProjectName}.{ModuleName}.Abstractions/Controllers/I{Entity}Controller.cs
+MMB GeneratorCode --ModulePath <模块路径>
 ```
 
-### 第二步：检查 MGC 文件夹中是否存在自动生成的部分类
+7. 仅检查生成结果，不手改生成文件：
+- `*.Abstractions/MGC/Controllers/I{Entity}Controller.Mapper.cs`
+- `*.Application/MGC/Controllers/{Entity}Controller.Mapper.cs`
 
-**检查路径**：
-```
-{ProjectName}.{ModuleName}.Application/MGC/Controllers/{Entity}Controller.cs
-```
+## 分支 2：需要特殊处理（手写控制器路径）
 
-**判断规则**：
-- 如果 MGC 文件夹中存在 `{Entity}Controller.cs` → 进入第三步判断是否继承基类
-- 如果 MGC 文件夹中不存在 → 创建 **完整类**，继承 `{ModuleName}Controller`
+1. 在 `*.Abstractions/Controllers/` 新增或扩展 `I{Entity}Controller.cs`。
+2. 在 `*.Abstractions/RequestModel/{Entity}/` 创建请求模型。
+3. 在 `*.Application/Controllers/` 新增或扩展 `{Entity}Controller.cs`（`partial class`）。
+4. 在控制器方法中执行：
+- 请求参数校验
+- 请求模型到服务模型映射（`Mapper.Map`）
+- 调用 `DefaultService` 对应方法
+- 返回 `ResultModel` / `ResultModel<T>` / `CollectionResultModel<T>`
+5. 如映射规则无法靠约定自动完成，补充 `AutoMapperProfile`。
+6. 对 Tree/Index 场景，若要手写控制器统一策略：
+- 在实体上先标记 `NotTreeController` / `NotIndexController`
+- 保留或抑制 Tree/Index 服务代码按业务决定（`NotTreeService` / `NotIndexService`）
+- 运行生成器后，仅在非 MGC 控制器中实现对应动作与策略
 
-### 第三步：确定基类类型
+控制器代码模板见：`references/controller-templates.md`
 
-#### 场景1：MGC 中存在自动生成的部分类
+## 路径速查
 
-**需要进一步检查 MGC 中的类是否已继承基类**：
+1. 服务接口：`{ProjectName}.{ModuleName}\{ProjectName}.{ModuleName}.Abstractions\Services\`
+2. 请求模型：`{ProjectName}.{ModuleName}\{ProjectName}.{ModuleName}.Abstractions\RequestModel\{Entity}\`
+3. 控制器接口：`{ProjectName}.{ModuleName}\{ProjectName}.{ModuleName}.Abstractions\Controllers\`
+4. 控制器实现：`{ProjectName}.{ModuleName}\{ProjectName}.{ModuleName}.Application\Controllers\`
 
-如果 MGC 中的类**已继承基类**（如 `class AdminController : MainController<...>`）：
-```csharp
-namespace {ProjectName}.{ModuleName}.Application.Controllers;
+需要精确路径时，使用 `mmb-path-resolver`。
 
-/// <summary>
-/// {实体描述}控制器
-/// </summary>
-public partial class {Entity}Controller
-{
-    // 方法实现...（无需添加基类）
-}
-```
+## 完成检查
 
-如果 MGC 中的类**未继承基类**（如 `public partial class AdminController`）：
-```csharp
-using {ProjectName}.{ModuleName}.Abstractions.Services;
-
-namespace {ProjectName}.{ModuleName}.Application.Controllers;
-
-/// <summary>
-/// {实体描述}控制器
-/// </summary>
-[Route("{ModuleAPI}/[controller]/[action]")]
-public partial class {Entity}Controller : {ModuleName}Controller<I{Entity}Service>
-{
-    // 方法实现...（需要添加基类）
-}
-```
-
-#### 场景2：MGC 中不存在自动生成的类
-
-继承 `{ModuleName}Controller` 或 `{ModuleName}Controller<TService>`：
-
-```csharp
-using {ProjectName}.{ModuleName}.Abstractions.Services;
-
-namespace {ProjectName}.{ModuleName}.Application.Controllers;
-
-/// <summary>
-/// {实体描述}控制器
-/// </summary>
-[Route("{ModuleAPI}/[controller]/[action]")]
-public class {Entity}Controller : {ModuleName}Controller<I{Entity}Service>, I{Entity}Controller
-{
-    // 方法实现...
-}
-```
-
-### 第四步：实现控制器方法
-
-#### 方法实现模板
-
-```csharp
-/// <summary>
-/// {方法描述}
-/// </summary>
-/// <param name="{ParameterName}">{参数描述}</param>
-/// <returns></returns>
-[Http{Method}]
-public async Task<ResultModel<{ReturnType}>> {MethodName}Async({RequestModel} {ParameterName})
-{
-    // 1. 参数映射（RequestModel → ServiceModel）
-    {ServiceModel} model = Mapper.Map<{ServiceModel}>({ParameterName})
-        ?? throw new ZhiTuException("映射失败");
-
-    // 2. 绑定登录用户 ID（如需要）
-    BindLoginUserID(model);
-
-    // 3. 调用服务方法
-    {ReturnType} result = await DefaultService.{MethodName}Async(model);
-
-    // 4. 返回结果
-    return ResultModel<{ReturnType}>.Success(result, "{操作描述}成功");
-}
-```
-
-#### 特殊场景处理
-
-##### 1. 无参数方法
-
-```csharp
-[HttpGet]
-public async Task<ResultModel<string>> GetCaptchaImageAsync()
-{
-    string result = await DefaultService.GetCaptchaImageAsync();
-    return ResultModel<string>.Success(result, "获取验证码成功");
-}
-```
-
-##### 2. 简单类型参数（无需映射）
-
-```csharp
-[HttpGet]
-public async Task<ResultModel<UserDTO>> GetInfoAsync([Required] Guid id)
-{
-    UserDTO result = await DefaultService.GetInfoAsync(id);
-    return ResultModel<UserDTO>.Success(result, "获取信息成功");
-}
-```
-
-##### 3. 返回无返回值方法
-
-```csharp
-[HttpPost]
-public async Task<ResultModel> SetEnabledAsync(SetEnabledRequestModel requestModel)
-{
-    SetEnabledModel model = Mapper.Map<SetEnabledModel>(requestModel)
-        ?? throw new ZhiTuException("映射失败");
-    await DefaultService.SetEnabledAsync(model);
-    return ResultModel.Success("设置状态成功");
-}
-```
-
-##### 4. 匿名访问方法
-
-```csharp
-[HttpPost, AllowAnonymous]
-public async Task<ResultModel<LoginResultDTO>> LoginAsync(LoginRequestModel requestModel)
-{
-    LoginModel model = Mapper.Map<LoginModel>(requestModel)
-        ?? throw new ZhiTuException("映射失败");
-    LoginResultDTO result = await DefaultService.LoginAsync(model);
-    return ResultModel<LoginResultDTO>.Success(result, "登录成功");
-}
-```
-
-##### 5. 文件上传
-
-```csharp
-[HttpPost]
-public async Task<ResultModel<string>> UploadAvatarAsync([Required] Guid userId, IFormFile file)
-{
-    if (file == null || file.Length == 0)
-    {
-        throw new ZhiTuException("请选择要上传的文件");
-    }
-    string result = await DefaultService.UploadAvatarAsync(userId, file);
-    return ResultModel<string>.Success(result, "上传成功");
-}
-```
-
-##### 6. 文件下载
-
-```csharp
-[HttpGet]
-public async Task<IActionResult> DownloadAsync([Required] Guid id)
-{
-    (byte[] fileBytes, string fileName, string contentType) = await DefaultService.GetFileAsync(id);
-    return File(fileBytes, contentType, fileName);
-}
-```
-
-### 第五步：MergeBlockController 基类可用成员
-
-| 成员名 | 类型 | 说明 |
-|--------|------|------|
-| `Mapper` | `IMapper` | 对象映射器 |
-| `DefaultService` | `TService` | 默认服务（继承自 `MergeBlockController<TService>`） |
-| `GetClientIP()` | `string` | 获取客户端 IP |
-| `BindLoginUserID(object)` | `void` | 绑定登录用户 ID 到带有 `[LoginUserID]` 特性的属性 |
-
-### 第六步：输出实现代码
-
-将实现代码写入：
-```
-{ProjectName}.{ModuleName}.Application/Controllers/{Entity}Controller.cs
-```
-
-## 完整示例
-
-### 示例1：MGC 存在部分类（推荐）
-
-**自动生成**（MGC/AdminController.cs）：
-```csharp
-public partial class AdminController : MainController<...>, IAdminController
-{
-}
-```
-
-**手动实现**（Controllers/AdminController.cs）：
-```csharp
-namespace ZhiTu.Main.Application.Controllers;
-
-public partial class AdminController
-{
-    /// <summary>
-    /// 管理员登录
-    /// </summary>
-    [HttpPost, AllowAnonymous]
-    public async Task<ResultModel<LoginResultDTO>> LoginAsync(LoginRequestModel requestModel)
-    {
-        LoginModel model = Mapper.Map<LoginModel>(requestModel)
-            ?? throw new ZhiTuException("映射失败");
-        LoginResultDTO result = await DefaultService.LoginAsync(model);
-        return ResultModel<LoginResultDTO>.Success(result, "登录成功");
-    }
-}
-```
-
-### 示例2：MGC 不存在（手动创建完整类）
-
-```csharp
-using Microsoft.AspNetCore.Mvc;
-using ZhiTu.Main.Abstractions.Controllers;
-using ZhiTu.Main.Abstractions.Services;
-
-namespace ZhiTu.Main.Application.Controllers;
-
-/// <summary>
-/// 文件管理控制器
-/// </summary>
-[Route("MainAPI/[controller]/[action]")]
-public class FileController : MainController<IFileService>, IFileController
-{
-    /// <summary>
-    /// 上传文件
-    /// </summary>
-    [HttpPost]
-    public async Task<ResultModel<string>> UploadAsync(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-        {
-            throw new ZhiTuException("请选择要上传的文件");
-        }
-        string result = await DefaultService.UploadAsync(file);
-        return ResultModel<string>.Success(result, "上传成功");
-    }
-}
-```
-
-## 注意事项
-
-1. **必须使用 partial class**：当 MGC 中存在自动生成的类时，手动创建的类必须是 partial class
-2. **不重复定义基类**：部分类不需要再次指定基类，基类已在 MGC 文件中定义
-3. **异常处理**：使用 `{ProjectName}Exception` 抛出业务异常
-4. **参数映射**：使用 `Mapper.Map` 进行 RequestModel → ServiceModel 映射
-5. **登录用户绑定**：需要获取登录用户 ID 时，在 ServiceModel 属性上添加 `[LoginUserID]` 特性，然后调用 `BindLoginUserID(model)`
-6. **匿名访问**：添加 `[AllowAnonymous]` 特性
-7. **禁止修改 MGC**：MGC 文件夹中的代码是自动生成的，禁止手动修改
-
-## 相关技能
-
-- **`/mmb-controller-design`**：控制器设计技能
-- **`/mmb-controller-return`**：控制器返回值设计规范
-- **`/mmb-service-design`**：服务接口设计技能
+1. 非标准接口流程是否按分支实现完成。
+2. 是否未修改任何 `MGC` 文件。
+3. 是否已运行生成器（MapperController 路径必需）。
+4. 是否补齐必要 `using`、命名空间、返回模型和异常处理。
+5. 是否避免无必要裸 `[Authorize]`（默认鉴权项目中）。
+6. Tree/Index 统一策略场景是否优先采用 `NotTreeController` / `NotIndexController` + 手写控制器。
+7. 是否通过编译验证（至少模块级 `dotnet build`）。

@@ -37,6 +37,8 @@ dotnet add package Materal.MergeBlock.Authorization.Abstractions
 
 `AuthorizationModule` 已在包中自动注册，只需在启动项目中安装主包即可。
 
+如需按角色/业务进行授权，需在业务模块中手动注册策略（推荐 `AddAuthorizationBuilder`）。
+
 ## 核心任务
 
 ### 生成 Token
@@ -55,6 +57,29 @@ public class YourServiceImpl(ITokenService tokenService)
     // 自定义Claims
     public string GenerateCustomToken(params Claim[] claims) => tokenService.GetToken(claims);
 }
+```
+
+### 获取 Token 过期时间
+
+从配置中获取 Token 的过期时间（秒）：
+
+```csharp
+using Materal.MergeBlock.Authorization.Abstractions;
+using Microsoft.Extensions.Options;
+
+public class YourServiceImpl(IOptionsMonitor<AuthorizationOptions> authorizationOptions)
+{
+    public int GetTokenExpiredTime()
+    {
+        return (int)authorizationOptions.CurrentValue.ExpiredTime;
+    }
+}
+```
+
+**注意**：`AuthorizationOptions` 位于 `Materal.MergeBlock.Authorization.Abstractions` 命名空间，注意不要与 ASP.NET Core 的 `Microsoft.AspNetCore.Authorization.AuthorizationOptions` 混淆。如果存在命名冲突，请使用完全限定名：
+
+```csharp
+IOptionsMonitor<Materal.MergeBlock.Authorization.Abstractions.AuthorizationOptions> authorizationOptions
 ```
 
 ### 获取登录用户信息
@@ -103,6 +128,63 @@ public ResultModel GetPublicInfo()
 }
 ```
 
+### 配置授权策略（推荐 AddAuthorizationBuilder）
+
+#### 1) 定义策略常量（推荐放在 Abstractions）
+
+```csharp
+namespace YourProject.YourModule.Abstractions;
+
+public static class MainAuthorizationPolicies
+{
+    public const string AdminOnly = "AdminOnly";
+}
+```
+
+#### 2) 在模块中注册策略
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using System.Security.Claims;
+
+public class YourModule() : MergeBlockModule("YourModule")
+{
+    public override void OnConfigureServices(ServiceConfigurationContext context)
+    {
+        base.OnConfigureServices(context);
+        context.Services
+            .AddAuthorizationBuilder()
+            .AddPolicy(MainAuthorizationPolicies.AdminOnly, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireAssertion(handlerContext =>
+                    handlerContext.User.Claims.Any(claim =>
+                        (claim.Type == ClaimTypes.Role
+                         || string.Equals(claim.Type, "role", StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(claim.Type, "Role", StringComparison.OrdinalIgnoreCase))
+                        && (string.Equals(claim.Value, "Admin", StringComparison.OrdinalIgnoreCase)
+                            || claim.Value == "0")));
+            });
+    }
+}
+```
+
+#### 3) 在服务接口方法上应用策略（配合 MapperController 生成）
+
+```csharp
+public partial interface IUserService
+{
+    [MapperController(MapperType.Put, Policy = MainAuthorizationPolicies.AdminOnly)]
+    Task UpdateUserStatusAsync(UpdateUserStatusModel model);
+}
+```
+
+**注意**：当使用 `Policy` 生成控制器时，`*.Abstractions` 需要可解析 `[Authorize]`，通常应确保存在：
+
+```csharp
+global using Microsoft.AspNetCore.Authorization;
+```
+
 ### 自定义 TokenService
 
 继承 `TokenServiceBase`：
@@ -135,6 +217,7 @@ Claim[] claims = new[]
     new Claim("UserID", "123e4567-e89b-12d3-a456-426614174000"),
     new Claim("CustomKey", "CustomValue"),
     new Claim(ClaimTypes.Name, "UserName"),
+    // 策略校验通常依赖角色声明
     new Claim(ClaimTypes.Role, "Admin")
 };
 string token = _tokenService.GetToken(claims);
