@@ -10,7 +10,7 @@ description: 移除 C# 文件中与 GlobalUsings.cs 重复的 using 语句。接
 1. **定位 GlobalUsings.cs 文件**
    - 从输入文件路径向上查找，找到所在的项目根目录（包含 `.csproj` 文件的目录）
    - 在该目录中查找 `GlobalUsings.cs` 文件
-   - 支持多个项目模块（如 ZhiTu.Main.Abstractions、ZhiTu.Core.Abstractions 等）
+   - 支持多个项目模块（如 {Project}.{Module}.Abstractions、{Project}.Core.Abstractions 等）
 
 2. **解析 GlobalUsings 内容**
    - 读取 GlobalUsings.cs 文件
@@ -32,15 +32,15 @@ description: 移除 C# 文件中与 GlobalUsings.cs 重复的 using 语句。接
 
 ### 单文件处理
 ```
-处理文件 ZhiTu.Main/ZhiTu.Main.Abstractions/Domain/Flowchart.cs
+处理文件 {Project}.{Module}/{Project}.{Module}.Abstractions/Do{Module}/Flowchart.cs
 ```
 
 ### 多文件处理
 ```
 处理以下文件中的重复 using：
-- ZhiTu.Main/ZhiTu.Main.Abstractions/Domain/Flowchart.cs
-- ZhiTu.Main/ZhiTu.Main.Abstractions/Domain/NodeKnowledge.cs
-- ZhiTu.Core/ZhiTu.Core.Abstractions/Services/ISampleService.cs
+- {Project}.{Module}/{Project}.{Module}.Abstractions/Do{Module}/Flowchart.cs
+- {Project}.{Module}/{Project}.{Module}.Abstractions/Do{Module}/NodeKnowledge.cs
+- {Project}.Core/{Project}.Core.Abstractions/Services/ISampleService.cs
 ```
 
 ## 命名空间比较规则
@@ -63,7 +63,7 @@ description: 移除 C# 文件中与 GlobalUsings.cs 重复的 using 语句。接
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Logging;
 
-namespace ZhiTu.Main.Abstractions.Domain;
+namespace {Project}.{Module}.Abstractions.Do{Module};
 
 public class Flowchart { }
 ```
@@ -78,7 +78,7 @@ global using Materal.MergeBlock.Abstractions;
 ```csharp
 using Microsoft.Extensions.Logging;
 
-namespace ZhiTu.Main.Abstractions.Domain;
+namespace {Project}.{Module}.Abstractions.Do{Module};
 
 public class Flowchart { }
 ```
