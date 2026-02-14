@@ -16,7 +16,7 @@
 | `NotTreeController` | 不生成 Tree 控制器代码 | Tree 接口需手写控制器统一策略 |
 | `NotTreeService` | 不生成 Tree 服务代码 | Tree 服务需完全手写或禁用 |
 | `NotTreeDTO` | 不生成 Tree DTO 代码 | 不需要 Tree DTO 结构 |
-| `NotTreeQuery` | 不生成 Tree 查询模型/请求模型 | 不需要 Tree 查询接口 |
+| `NotTreeRepository` | 不生成 Tree 仓储代码 | 不需要 Tree 仓储扩展 |
 | `NotIndexController` | 不生成 Index 控制器代码 | Index 接口需手写控制器统一策略 |
 | `NotIndexService` | 不生成 Index 服务代码 | Index 服务需完全手写或禁用 |
 | `NotIndexRepository` | 不生成 Index 仓储代码 | 不需要 Index 仓储扩展 |
@@ -50,11 +50,7 @@
 - `T:Materal.MergeBlock.GeneratorCode.Attributers.NotTreeControllerAttribute`
 - `T:Materal.MergeBlock.GeneratorCode.Attributers.NotTreeServiceAttribute`
 - `T:Materal.MergeBlock.GeneratorCode.Attributers.NotTreeDTOAttribute`
-- `T:Materal.MergeBlock.GeneratorCode.Attributers.NotTreeQueryAttribute`
+- `T:Materal.MergeBlock.GeneratorCode.Attributers.NotTreeRepositoryAttribute`
 - `T:Materal.MergeBlock.GeneratorCode.Attributers.NotIndexControllerAttribute`
 - `T:Materal.MergeBlock.GeneratorCode.Attributers.NotIndexServiceAttribute`
 - `T:Materal.MergeBlock.GeneratorCode.Attributers.NotIndexRepositoryAttribute`
-
-默认路径：
-
-`C:/Users/cloom/.nuget/packages/materal.mergeblock.generatorcode/1.4.6/lib/net10.0/Materal.MergeBlock.GeneratorCode.xml`

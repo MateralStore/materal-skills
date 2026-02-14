@@ -1,6 +1,6 @@
 ---
 name: mmb-entity-generator-marking
-description: MMB (Materal.MergeBlock) 实体代码生成控制特性标记技能。用于在任意 MMB 项目中，根据任务文档与实体职责为实体添加或校正 EmptyController/EmptyService/NotController/NotService/NotAdd/NotEdit/NotQuery 以及 NotTreeController/NotTreeService/NotTreeDTO/NotTreeQuery、NotIndexController/NotIndexService/NotIndexRepository 等特性，控制生成器是否生成控制器、服务、仓储及 Tree/Index 相关代码。适用于关系实体、中间表、纯业务接口实体、部分能力实体、标准实体等全部实体类型。
+description: MMB (Materal.MergeBlock) 实体代码生成控制特性标记技能。用于在任意 MMB 项目中，根据任务文档与实体职责为实体添加或校正 EmptyController/EmptyService/NotController/NotService/NotAdd/NotEdit/NotQuery 以及 NotTreeController/NotTreeService/NotTreeDTO/NotTreeRepository/NotIndexController/NotIndexService/NotIndexRepository 等特性，控制生成器是否生成控制器、服务、仓储及 Tree/Index 相关代码。适用于关系实体、中间表、纯业务接口实体、部分能力实体、标准实体等全部实体类型。
 ---
 # MMB 实体生成标记
 
@@ -27,7 +27,7 @@ description: MMB (Materal.MergeBlock) 实体代码生成控制特性标记技能
 
 Tree/Index 生成抑制特性（类级）：
 
-- Tree：`[NotTreeController]`、`[NotTreeService]`、`[NotTreeDTO]`、`[NotTreeQuery]`
+- Tree：`[NotTreeController]`、`[NotTreeService]`、`[NotTreeDTO]`、`[NotTreeRepository]`
 - Index：`[NotIndexController]`、`[NotIndexService]`、`[NotIndexRepository]`
 
 ## 工作流
@@ -100,7 +100,8 @@ flowchart TD
 
 1. 需要保留生成 Tree/Index 控制器：不加 `NotTreeController` / `NotIndexController`。
 2. 需要对 Tree/Index 动作统一施加策略（例如统一 `Authorize(Policy=...)`）且生成器无法满足：加 `NotTreeController` / `NotIndexController`，改为手写控制器。
-3. 需要完全禁用 Tree 查询或 Tree DTO 生成时，再加 `NotTreeQuery` / `NotTreeDTO`。
+3. 需要完全禁用 Tree DTO 生成时，再加 `NotTreeDTO`。
+4. 需要完全禁用 Tree 仓储扩展时，加 `NotTreeRepository`。
 4. 需要完全禁用 Index 仓储扩展时，加 `NotIndexRepository`。
 
 ## 示例
