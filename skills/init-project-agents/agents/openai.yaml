@@ -1,4 +1,4 @@
 interface:
   display_name: "Init Project Agents"
-  short_description: "Initialize project .agents and .calude link"
+  short_description: "Initialize agents folders and guide files"
   default_prompt: "Use $init-project-agents to prepare this project directory for agent-local skills."
