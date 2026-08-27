@@ -8,11 +8,18 @@ Thumbs.db
 *.suo
 *.user
 
+# Local agent state
+.reasonix/
+
 # Build outputs
 bin/
 obj/
 dist/
 build/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
 
 # Temporary files
 *.tmp

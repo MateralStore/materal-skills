@@ -1,5 +1,11 @@
 # Materal MMB 技能集
 
+## Codex 插件
+
+本仓库也可作为 Codex 个人插件使用。Codex 清单位于 `.codex-plugin/plugin.json`，会加载 `skills/` 下实际存在的技能；其中 `dbctl` 用于安全调用 MateralDBTools 数据库命令行工具。
+
+`.claude-plugin/` 保留用于兼容原有 Claude 使用方式，两个插件清单彼此独立。
+
 ![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-blue?style=flat-square)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "dbctl 数据库工具"
+  short_description: "安全管理数据库连接并执行受控查询"
+  default_prompt: "使用 $dbctl 安全检查数据库连接或执行只读查询。"

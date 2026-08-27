@@ -1,0 +1,37 @@
+{
+  "name": "materal-skills",
+  "version": "1.0.0",
+  "description": "Materal 的 .NET 开发、项目初始化和数据库操作个人技能集。",
+  "author": {
+    "name": "Materal",
+    "email": "support@materal.com",
+    "url": "https://github.com/MateralStore"
+  },
+  "homepage": "https://github.com/MateralStore/materal-skills",
+  "repository": "https://github.com/MateralStore/materal-skills",
+  "license": "MIT",
+  "keywords": [
+    "dotnet",
+    "mmb",
+    "database",
+    "project-setup"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Materal 技能集",
+    "shortDescription": "Materal 的 .NET 开发与本地工具技能。",
+    "longDescription": "包含 MMB 开发流程、项目初始化、浏览器调试和数据库查询工具的个人 Codex 技能集。",
+    "developerName": "Materal",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "初始化当前项目的本地代理技能目录。",
+      "使用 dbctl 安全查询一个已保存的数据库连接。",
+      "按 MMB 规范实现当前功能。"
+    ],
+    "brandColor": "#1677FF"
+  }
+}

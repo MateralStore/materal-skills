@@ -1,0 +1,4 @@
+interface:
+  display_name: "去除纯色背景"
+  short_description: "自动识别并移除纯色背景，导出透明 PNG"
+  default_prompt: "使用 $remove-solid-background 移除图片的纯色背景并输出透明 PNG。"

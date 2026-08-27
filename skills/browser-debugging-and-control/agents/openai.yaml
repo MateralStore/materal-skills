@@ -1,0 +1,4 @@
+interface:
+  display_name: "浏览器调试链路诊断"
+  short_description: "诊断浏览器连接器与 Chrome DevTools 端点"
+  default_prompt: "使用 $browser-debugging-and-control 诊断当前浏览器控制链路。"
