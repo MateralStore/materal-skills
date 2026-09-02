@@ -1,6 +1,6 @@
 ---
 name: init-project-agents
-description: Initialize a project directory for agent-local skills by creating or reusing .agents and .agents/skills, creating a .claude symbolic link that points to .agents, and creating AGENTS.md plus CLAUDE.md project guidance files. Use when setting up any new project workspace, preparing a repository for local agent skills, generating project agent instructions, or migrating an existing .claude folder into .agents.
+description: Initialize a project directory by running git init when needed, creating a standard .gitignore, creating or reusing .agents and .agents/skills, creating a .claude symbolic link that points to .agents, and creating AGENTS.md plus CLAUDE.md project guidance files. Use when setting up any new project workspace, preparing a repository for local agent skills, generating project agent instructions, or migrating an existing .claude folder into .agents.
 ---
 
 # Init Project Agents
@@ -13,22 +13,26 @@ description: Initialize a project directory for agent-local skills by creating o
 2. 在 `.agents` 下创建或复用 `skills`。
 3. 在目标目录下创建名为 `.claude` 的目录符号链接，链接目标为 `.agents`。
 4. 在目标目录下创建或复用 `AGENTS.md` 和 `CLAUDE.md`。
+5. 目标目录尚未初始化 Git 时执行 `git init`；已有 `.git` 时复用，不重置或覆盖现有仓库。
+6. `.gitignore` 不存在时创建标准模板；已存在时保留原内容，不覆盖。
 
 ## 工作流程
 
 1. 确认用户提供的目标目录；若未提供，使用当前工作目录作为目标目录。
 2. 运行 `scripts/Initialize-ProjectAgents.ps1`，传入目标目录。
-3. `.agents` 已存在时不创建；若存在但不是目录，停止并报告冲突。
-4. `.agents/skills` 已存在时不创建；若存在但不是目录，停止并报告冲突。
-5. `AGENTS.md` 不存在时创建项目说明、按业务主题组织的计划文档目录规范、文档维护策略、工作树约定与注意事项；已存在时保留原内容，并检查是否包含这些必需章节，缺失时追加补齐。注意事项必须要求新增或修改文件时保持 CRLF 行尾；若工具产生 LF 行尾，提交前需转换为 CRLF 并检查确认。计划目录编号只用于排序，不表示开发阶段、迭代批次或历史顺序；每份计划文档只保留最终有效的当前状态，不保留历史记录。若文档含有完整的 GitNexus 区块（`<!-- gitnexus:start -->` 至 `<!-- gitnexus:end -->`），更新后将该区块整体置于文件末尾。文档维护策略要求计划文档只反映当前或已批准计划的最终状态，优先更新既有文档，且仅在用户明确要求且范围确实独立时新建计划目录。工作树约定要求代理手工创建工作树时默认使用仓库根目录的 `.worktrees/<工作树名称>`，并忽略 `.worktrees/`；它不试图修改 Codex App 自动创建工作树的宿主路径。
-6. `CLAUDE.md` 已存在时不覆盖；不存在时创建，内容只写 `AGENTS.md`。
-7. 处理 `.claude`：
+3. 目标目录尚未初始化 Git 时执行 `git init`；已有 `.git` 时复用，不重置或覆盖现有仓库。
+4. `.gitignore` 不存在时创建标准模板；已存在时保留原内容，不覆盖。
+5. `.agents` 已存在时不创建；若存在但不是目录，停止并报告冲突。
+6. `.agents/skills` 已存在时不创建；若存在但不是目录，停止并报告冲突。
+7. `AGENTS.md` 不存在时创建项目说明、项目目录结构、文档维护策略、工作树约定与注意事项；已存在时保留未受管理的自定义内容，并将这些受管理区块升级或补齐为最新版本。项目目录结构中的根目录名称、标题和说明必须根据实际项目动态生成，不得写死示例项目名。模板包含 `docs`、`Server`、`Client`、`Demo` 的目录结构，以及 `001-总体计划` 和 `NNN-业务主题`。注意事项必须要求新增或修改文件时保持 CRLF 行尾；若工具产生 LF 行尾，提交前需转换为 CRLF 并检查确认。文档只保留当前有效状态；需求分析和 UML 图保留可编辑源文件。若文档含有完整的 GitNexus 区块（`<!-- gitnexus:start -->` 至 `<!-- gitnexus:end -->`），更新后将该区块整体置于文件末尾。
+8. `CLAUDE.md` 已存在时不覆盖；不存在时创建，内容只写 `AGENTS.md`。
+9. 处理 `.claude`：
    - 不存在时，创建 `.claude -> .agents` 的目录符号链接。
    - 已经是目录符号链接且指向当前目录下的 `.agents` 时，跳过创建。
    - 是目录符号链接但目标不正确时，默认停止；用户明确允许重建时传入 `-Force`。
    - 是真实目录时，将其中内容复制到 `.agents`，删除原 `.claude` 目录，再创建 `.claude -> .agents`。
    - 是普通文件时，直接删除该文件，再创建 `.claude -> .agents`。
-8. 汇报创建、复用、迁移或删除的路径。
+10. 汇报 Git 初始化、`.gitignore` 创建或复用，以及其他创建、复用、迁移或删除的路径。
 
 ## 脚本用法
 
@@ -60,9 +64,11 @@ New-Item -ItemType SymbolicLink -Path "<project-dir>\.claude" -Value "<project-d
 
 执行后检查：
 
-1. `<project-dir>\.agents` 存在且为目录。
-2. `<project-dir>\.agents\skills` 存在且为目录。
-3. `<project-dir>\.claude` 存在且为目录符号链接，目标为 `<project-dir>\.agents`。
-4. 若原先存在真实 `.claude` 目录，其内容已经复制到 `.agents`。
-5. `<project-dir>\AGENTS.md` 存在。新建文件时包含项目名、项目说明、`docs\plans\` 按业务主题组织的目录规范、文档维护策略、工作树约定、要求新增或修改文件使用 CRLF 行尾并在提交前转换和检查 LF 行尾的约束、中文提交约束、通用提交示例和创建分支确认约束；目录编号仅用于排序，文档只保留最终有效的当前状态。已有文件时至少补齐文档目录规范、文档维护策略、工作树约定和注意事项。存在完整 GitNexus 区块时，该区块位于文件末尾。
-6. `<project-dir>\CLAUDE.md` 存在，内容只包含 `AGENTS.md`。
+1. `<project-dir>\.git` 存在，目标目录是 Git 仓库。
+2. `<project-dir>\.gitignore` 存在。新建文件时内容与标准模板一致并使用 CRLF；已有文件时内容保持不变。
+3. `<project-dir>\.agents` 存在且为目录。
+4. `<project-dir>\.agents\skills` 存在且为目录。
+5. `<project-dir>\.claude` 存在且为目录符号链接，目标为 `<project-dir>\.agents`。
+6. 若原先存在真实 `.claude` 目录，其内容已经复制到 `.agents`。
+7. `<project-dir>\AGENTS.md` 存在。标题为 `# <实际项目名> 项目`，项目目录结构的根节点也使用实际项目名；未指定 `-ProjectName` 时使用目标目录名。模板包含 `docs`、`Server`、`Client`、`Demo`，以及 `docs/plans`、`docs/需求分析`、`docs/uml` 的约定；包含 `001-总体计划` 和 `NNN-业务主题`。已有文件时升级或补齐项目目录结构、文档维护策略、工作树和注意事项，并保留其他自定义内容。存在完整 GitNexus 区块时，该区块位于文件末尾。
+8. `<project-dir>\CLAUDE.md` 存在，内容只包含 `AGENTS.md`。

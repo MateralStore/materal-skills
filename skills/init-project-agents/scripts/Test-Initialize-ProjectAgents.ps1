@@ -37,6 +37,16 @@ function Assert-PathFile {
     Assert-True -Condition (Test-Path -LiteralPath $Path -PathType Leaf) -Message "Expected file to exist: $Path"
 }
 
+function Assert-GitRepository {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectPath
+    )
+
+    $gitDirectory = (& git -C $ProjectPath rev-parse --git-dir 2>$null).Trim()
+    Assert-True -Condition ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($gitDirectory)) -Message "Expected a Git repository: $ProjectPath"
+}
+
 function Assert-CrlfFile {
     param(
         [Parameter(Mandatory = $true)]
@@ -74,18 +84,32 @@ function Assert-ProjectDocs {
 
     $agentsFile = Join-Path -Path $ProjectPath -ChildPath 'AGENTS.md'
     $claudeFile = Join-Path -Path $ProjectPath -ChildPath 'CLAUDE.md'
+    $gitIgnoreFile = Join-Path -Path $ProjectPath -ChildPath '.gitignore'
 
     Assert-PathFile -Path $agentsFile
     Assert-PathFile -Path $claudeFile
+    Assert-PathFile -Path $gitIgnoreFile
+    Assert-GitRepository -ProjectPath $ProjectPath
     Assert-CrlfFile -Path $agentsFile
     Assert-CrlfFile -Path $claudeFile
+    Assert-CrlfFile -Path $gitIgnoreFile
+
+    $gitIgnoreContent = Get-Content -LiteralPath $gitIgnoreFile -Raw
+    Assert-True -Condition ($gitIgnoreContent.Contains('**/[Bb]in/')) -Message 'Expected .gitignore to ignore .NET build output.'
+    Assert-True -Condition ($gitIgnoreContent.Contains('node_modules/')) -Message 'Expected .gitignore to ignore frontend dependencies.'
+    Assert-True -Condition ($gitIgnoreContent.Contains('.worktrees/')) -Message 'Expected .gitignore to ignore local worktrees.'
+    Assert-True -Condition ($gitIgnoreContent.Contains('.claude')) -Message 'Expected .gitignore to ignore the Claude link.'
+    Assert-True -Condition ($gitIgnoreContent.Contains('CLAUDE.md')) -Message 'Expected .gitignore to ignore CLAUDE.md.'
 
     $claudeContent = Get-Content -LiteralPath $claudeFile -Raw
     Assert-True -Condition ($claudeContent.Trim() -eq 'AGENTS.md') -Message 'Expected CLAUDE.md to contain only AGENTS.md.'
 
     $agentsContent = Get-Content -LiteralPath $agentsFile -Raw
-    Assert-True -Condition ($agentsContent.Contains("# $ExpectedProjectName")) -Message 'Expected AGENTS.md to contain the project name.'
-    Assert-True -Condition ($agentsContent.Contains($ExpectedProjectDescription)) -Message 'Expected AGENTS.md to contain the project description.'
+    Assert-True -Condition ($agentsContent.Contains("# $ExpectedProjectName 项目")) -Message 'Expected AGENTS.md heading to contain the project name.'
+    Assert-True -Condition ($agentsContent.Contains("$ExpectedProjectName\")) -Message 'Expected AGENTS.md directory tree to contain the project name.'
+    if ($ExpectedProjectDescription -ne '暂无项目说明') {
+        Assert-True -Condition ($agentsContent.Contains($ExpectedProjectDescription)) -Message 'Expected AGENTS.md to contain the project description.'
+    }
     Assert-RequiredAgentsContent -Content $agentsContent
 }
 
@@ -95,18 +119,25 @@ function Assert-RequiredAgentsContent {
         [string]$Content
     )
 
-    Assert-True -Condition ($Content.Contains('# 文档目录')) -Message 'Expected AGENTS.md to include docs section heading.'
+    Assert-True -Condition ($Content.Contains('# 项目目录结构')) -Message 'Expected AGENTS.md to include project structure heading.'
+    Assert-True -Condition (-not $Content.Contains('# 文档目录')) -Message 'Expected AGENTS.md to omit the legacy docs heading.'
     Assert-True -Condition ($Content.Contains('docs\')) -Message 'Expected AGENTS.md to describe docs directory.'
     Assert-True -Condition ($Content.Contains('plans\')) -Message 'Expected AGENTS.md to describe plans directory.'
+    Assert-True -Condition ($Content.Contains('需求分析\')) -Message 'Expected AGENTS.md to describe requirements analysis documents.'
+    Assert-True -Condition ($Content.Contains('uml\')) -Message 'Expected AGENTS.md to describe UML documents.'
+    Assert-True -Condition ($Content.Contains('Demo\')) -Message 'Expected AGENTS.md to describe demo projects.'
     Assert-True -Condition ($Content.Contains('testPlan.md')) -Message 'Expected AGENTS.md to describe test plans.'
-    Assert-True -Condition ($Content.Contains('Pages\<页面名称>\')) -Message 'Expected AGENTS.md to describe page design docs.'
+    Assert-True -Condition ($Content.Contains('Pages\')) -Message 'Expected AGENTS.md to describe page design docs.'
+    Assert-True -Condition ($Content.Contains('<页面>\')) -Message 'Expected AGENTS.md to describe page-specific docs.'
+    Assert-True -Condition ($Content.Contains('Components\')) -Message 'Expected AGENTS.md to describe component design docs.'
     Assert-True -Condition ($Content.Contains('NNN-业务主题')) -Message 'Expected AGENTS.md to use business-topic plan directories.'
     Assert-True -Condition ($Content.Contains('仅用于排序')) -Message 'Expected AGENTS.md to distinguish directory ordering from development phases.'
-    Assert-True -Condition ($Content.Contains('最终有效的当前状态')) -Message 'Expected AGENTS.md to retain only current final documentation.'
+    Assert-True -Condition ($Content.Contains('不存放源代码')) -Message 'Expected AGENTS.md to keep source code out of plan directories.'
     Assert-True -Condition ($Content.Contains('# 文档维护策略')) -Message 'Expected AGENTS.md to include documentation maintenance policy.'
-    Assert-True -Condition ($Content.Contains('当前或已批准计划的最终状态')) -Message 'Expected AGENTS.md to treat plans as current-state documents.'
-    Assert-True -Condition ($Content.Contains('直接更新最贴合的现有文件')) -Message 'Expected AGENTS.md to require updating existing documents first.'
-    Assert-True -Condition ($Content.Contains('用户明确要求新建目录')) -Message 'Expected AGENTS.md to require explicit authorization for a new plan directory.'
+    Assert-True -Condition ($Content.Contains('docs` 中的文档只保留当前有效状态')) -Message 'Expected AGENTS.md to treat docs as current-state documents.'
+    Assert-True -Condition ($Content.Contains('docs/需求分析/')) -Message 'Expected AGENTS.md to locate requirement diagrams.'
+    Assert-True -Condition ($Content.Contains('docs/uml/')) -Message 'Expected AGENTS.md to locate UML sources.'
+    Assert-True -Condition ($Content.Contains('渲染图片不能替代源文件')) -Message 'Expected AGENTS.md to require editable diagram sources.'
     Assert-True -Condition ($Content.Contains('# 工作树')) -Message 'Expected AGENTS.md to include worktree guidance.'
     Assert-True -Condition ($Content.Contains('.worktrees/<工作树名称>')) -Message 'Expected AGENTS.md to use the project .worktrees convention.'
     Assert-True -Condition ($Content.Contains('.worktrees/')) -Message 'Expected AGENTS.md to ignore the local worktrees directory.'
@@ -152,12 +183,18 @@ try {
     $emptyProject = Join-Path -Path $testRoot -ChildPath 'empty-project'
     New-Item -ItemType Directory -Path $emptyProject | Out-Null
 
-    & $scriptPath -TargetDirectory $emptyProject | Out-Null
+    $emptyResult = & $scriptPath -TargetDirectory $emptyProject
 
     Assert-PathDirectory -Path (Join-Path -Path $emptyProject -ChildPath '.agents')
     Assert-PathDirectory -Path (Join-Path -Path $emptyProject -ChildPath '.agents\skills')
     Assert-ClaudeLinkTargetsAgents -ProjectPath $emptyProject
     Assert-ProjectDocs -ProjectPath $emptyProject -ExpectedProjectName 'empty-project' -ExpectedProjectDescription '暂无项目说明'
+    Assert-True -Condition ([bool]$emptyResult.GitInitialized) -Message 'Expected a new Git repository to be initialized.'
+    Assert-True -Condition ([bool]$emptyResult.GitIgnoreCreated) -Message 'Expected a new .gitignore to be created.'
+
+    $emptyRerunResult = & $scriptPath -TargetDirectory $emptyProject
+    Assert-True -Condition ([bool]$emptyRerunResult.GitReused) -Message 'Expected an existing Git repository to be reused.'
+    Assert-True -Condition ([bool]$emptyRerunResult.GitIgnoreReused) -Message 'Expected an existing .gitignore to be reused.'
 
     $fileProject = Join-Path -Path $testRoot -ChildPath 'file-project'
     New-Item -ItemType Directory -Path $fileProject | Out-Null
@@ -207,6 +244,8 @@ try {
 
     $existingAgentsProject = Join-Path -Path $testRoot -ChildPath 'existing-agents-project'
     New-Item -ItemType Directory -Path $existingAgentsProject | Out-Null
+    $existingGitIgnorePath = Join-Path -Path $existingAgentsProject -ChildPath '.gitignore'
+    Set-Content -LiteralPath $existingGitIgnorePath -Value "# custom ignore`r`ncustom.tmp`r`n" -NoNewline
     $existingAgentsPath = Join-Path -Path $existingAgentsProject -ChildPath 'AGENTS.md'
     Set-Content -LiteralPath $existingAgentsPath -Value "# Existing Project`r`n保留这段已有说明。" -NoNewline
 
@@ -214,20 +253,23 @@ try {
 
     $existingAgentsContent = Get-Content -LiteralPath $existingAgentsPath -Raw
     Assert-True -Condition ($existingAgentsContent.Contains('保留这段已有说明。')) -Message 'Expected existing AGENTS.md content to be preserved.'
+    $existingGitIgnoreContent = Get-Content -LiteralPath $existingGitIgnorePath -Raw
+    Assert-True -Condition ($existingGitIgnoreContent.Contains('custom.tmp')) -Message 'Expected existing .gitignore content to be preserved.'
     Assert-CrlfFile -Path $existingAgentsPath
     Assert-RequiredAgentsContent -Content $existingAgentsContent
 
     & $scriptPath -TargetDirectory $existingAgentsProject | Out-Null
 
     $rerunAgentsContent = Get-Content -LiteralPath $existingAgentsPath -Raw
-    $docsHeadingCount = ([regex]::Matches($rerunAgentsContent, [regex]::Escape('# 文档目录'))).Count
+    $projectStructureHeadingCount = ([regex]::Matches($rerunAgentsContent, [regex]::Escape('# 项目目录结构'))).Count
     $maintenanceHeadingCount = ([regex]::Matches($rerunAgentsContent, [regex]::Escape('# 文档维护策略'))).Count
     $worktreeHeadingCount = ([regex]::Matches($rerunAgentsContent, [regex]::Escape('# 工作树'))).Count
     $notesHeadingCount = ([regex]::Matches($rerunAgentsContent, [regex]::Escape('# 注意事项'))).Count
-    Assert-True -Condition ($docsHeadingCount -eq 1) -Message 'Expected docs section to be appended only once.'
+    Assert-True -Condition ($projectStructureHeadingCount -eq 1) -Message 'Expected project structure section to be written only once.'
     Assert-True -Condition ($maintenanceHeadingCount -eq 1) -Message 'Expected documentation maintenance section to be appended only once.'
     Assert-True -Condition ($worktreeHeadingCount -eq 1) -Message 'Expected worktree section to be appended only once.'
     Assert-True -Condition ($notesHeadingCount -eq 1) -Message 'Expected notes section to be appended only once.'
+    Assert-True -Condition ($rerunAgentsContent.Contains('## 文档维护策略') -eq $false) -Message 'Expected managed sections to remain level-one headings.'
 
     $legacyDocsProject = Join-Path -Path $testRoot -ChildPath 'legacy-docs-project'
     New-Item -ItemType Directory -Path $legacyDocsProject | Out-Null
@@ -237,7 +279,7 @@ try {
 
 # 文档目录
 
-- 计划文档需要按文件夹拆分，文件夹命名格式为 `001-XXXXXXXX`、`002-XXXXXXXXX`。
+- 计划文档需要按文件夹拆分，文件夹命名格式为 `001-总体计划`、`NNN-业务主题`。
 
 # 注意事项
 
@@ -247,10 +289,12 @@ try {
     & $scriptPath -TargetDirectory $legacyDocsProject | Out-Null
 
     $legacyDocsContent = Get-Content -LiteralPath $legacyDocsAgentsPath -Raw
-    $legacyDocsHeadingCount = ([regex]::Matches($legacyDocsContent, [regex]::Escape('# 文档目录'))).Count
-    Assert-True -Condition ($legacyDocsHeadingCount -eq 1) -Message 'Expected legacy docs section to be replaced instead of duplicated.'
+    $projectStructureHeadingCount = ([regex]::Matches($legacyDocsContent, [regex]::Escape('# 项目目录结构'))).Count
+    Assert-True -Condition ($projectStructureHeadingCount -eq 1) -Message 'Expected legacy docs section to be replaced with project structure guidance.'
+    Assert-True -Condition (-not $legacyDocsContent.Contains('# 文档目录')) -Message 'Expected the legacy docs heading to be removed.'
     Assert-True -Condition (-not $legacyDocsContent.Contains('计划文档需要按文件夹拆分')) -Message 'Expected legacy phase-oriented docs guidance to be removed.'
     Assert-True -Condition ($legacyDocsContent.Contains('NNN-业务主题')) -Message 'Expected legacy docs guidance to be replaced with business-topic guidance.'
+    Assert-True -Condition ($legacyDocsContent.Contains('legacy-docs-project\')) -Message 'Expected upgraded project structure to use the actual directory name.'
 
     $gitNexusProject = Join-Path -Path $testRoot -ChildPath 'gitnexus-project'
     New-Item -ItemType Directory -Path $gitNexusProject | Out-Null
