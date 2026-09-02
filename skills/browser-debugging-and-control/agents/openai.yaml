@@ -1,4 +1,7 @@
 interface:
-  display_name: "浏览器调试链路诊断"
-  short_description: "诊断浏览器连接器与 Chrome DevTools 端点"
-  default_prompt: "使用 $browser-debugging-and-control 诊断当前浏览器控制链路。"
+  display_name: "浏览器调试与控制"
+  short_description: "MCP 优先完成网页调试，CLI 保留多实例与原始 CDP 能力"
+  default_prompt: "默认使用 $browser-debugging-and-control 处理网页打开、浏览器控制、网页调试和测试；优先 Chrome DevTools MCP，生命周期、多实例、多账号和原始 CDP 使用配套 CLI。只有用户明确指定 @Chrome、@Edge 或 @浏览器时才使用对应连接器。"
+
+policy:
+  allow_implicit_invocation: true

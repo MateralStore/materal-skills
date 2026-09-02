@@ -1,7 +1,7 @@
 {
   "name": "materal-skills",
   "version": "1.0.0",
-  "description": "Materal 的 .NET 开发、项目初始化和数据库操作个人技能集。",
+  "description": "Materal 的 .NET 开发、项目初始化、数据库操作和浏览器调试个人技能集。",
   "author": {
     "name": "Materal",
     "email": "support@materal.com",
@@ -14,12 +14,15 @@
     "dotnet",
     "mmb",
     "database",
-    "project-setup"
+    "project-setup",
+    "browser-debugging",
+    "chrome-devtools",
+    "cdp"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Materal 技能集",
-    "shortDescription": "Materal 的 .NET 开发与本地工具技能。",
+    "shortDescription": "Materal 的 .NET 开发、数据库与浏览器调试技能。",
     "longDescription": "包含 MMB 开发流程、项目初始化、浏览器调试和数据库查询工具的个人 Codex 技能集。",
     "developerName": "Materal",
     "category": "Productivity",
@@ -30,7 +33,8 @@
     "defaultPrompt": [
       "初始化当前项目的本地代理技能目录。",
       "使用 dbctl 安全查询一个已保存的数据库连接。",
-      "按 MMB 规范实现当前功能。"
+      "按 MMB 规范实现当前功能。",
+      "默认使用 $browser-debugging-and-control 处理网页打开、浏览器控制、网页调试和测试；优先 Chrome DevTools MCP，生命周期、多实例、多账号和原始 CDP 使用 CLI。只有用户明确指定 @Chrome、@Edge 或 @浏览器时才使用对应连接器。"
     ],
     "brandColor": "#1677FF"
   }
